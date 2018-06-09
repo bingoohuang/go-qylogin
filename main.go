@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
 	"flag"
+	"fmt"
+	"github.com/BurntSushi/toml"
+	"github.com/bingoohuang/go-utils"
+	"github.com/gorilla/mux"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
-	"net/http"
-	"github.com/bingoohuang/go-utils"
 	"time"
-	"log"
-	"github.com/BurntSushi/toml"
-	"fmt"
 )
 
 var (
@@ -23,7 +23,8 @@ var (
 	agentId     string
 	redirectUri string
 
-	cookieName string
+	cookieName   string
+	cookieDomain string
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	agentIdArg := flag.String("agentId", "", "agentId")
 	redirectUriArg := flag.String("wxRedirectUri", "", "wxRedirectUri")
 	cookieArg := flag.String("cookie", "i-raiyee-cn-auth", "cookie name")
+	cookieDomainArg := flag.String("cookieDomain", "raiyee.cn", "cookie domain")
 
 	flag.Parse()
 
@@ -53,6 +55,7 @@ func init() {
 	redirectUri = *redirectUriArg
 
 	cookieName = *cookieArg
+	cookieDomain = *cookieDomainArg
 }
 
 func main() {
@@ -134,7 +137,7 @@ func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 		cookie.Redirect = r.FormValue("redirect")
 		cookie.CsrfToken = csrfToken
 		cookie.Expired = time.Now().Add(time.Duration(8) * time.Hour)
-		go_utils.WriteCookie(w, encryptKey, cookieName, &cookie)
+		go_utils.WriteDomainCookie(w, cookieDomain, encryptKey, cookieName, &cookie)
 		url := go_utils.CreateWxQyLoginUrl(corpId, agentId, redirectUri, csrfToken)
 		log.Println("wx login url:", url)
 
@@ -176,7 +179,7 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	cookie.CsrfToken = ""
 	cookie.Expired = time.Now().Add(time.Duration(8) * time.Hour)
 
-	go_utils.WriteCookie(w, encryptKey, cookieName, cookie)
+	go_utils.WriteDomainCookie(w, cookieDomain, encryptKey, cookieName, cookie)
 
 	if cookie.Redirect != "" {
 		http.Redirect(w, r, cookie.Redirect, 302)
