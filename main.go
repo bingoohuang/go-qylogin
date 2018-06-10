@@ -122,8 +122,8 @@ func (t *CookieValue) ExpiredTime() time.Time {
 func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie := CookieValue{}
-		go_utils.ReadCookie(r, encryptKey, cookieName, &cookie)
-		if cookie.Name != "" {
+		err := go_utils.ReadCookie(r, encryptKey, cookieName, &cookie)
+		if err == nil && cookie.Name != "" {
 			fn(w, r) // 执行被装饰的函数
 			return
 		}
