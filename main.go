@@ -1,62 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"github.com/bingoohuang/go-utils"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 )
-
-var (
-	contextPath string
-	port        string
-
-	encryptKey  string
-	corpId      string
-	corpSecret  string
-	agentId     string
-	redirectUri string
-
-	cookieName   string
-	cookieDomain string
-)
-
-func init() {
-	contextPathArg := flag.String("contextPath", "", "context path")
-	portArg := flag.Int("port", 10569, "Port to serve.")
-
-	keyArg := flag.String("key", "", "key to encryption or decryption")
-	corpIdArg := flag.String("corpId", "", "corpId")
-	corpSecretArg := flag.String("corpSecret", "", "cropId")
-	agentIdArg := flag.String("agentId", "", "agentId")
-	redirectUriArg := flag.String("wxRedirectUri", "", "wxRedirectUri")
-	cookieArg := flag.String("cookie", "i-raiyee-cn-auth", "cookie name")
-	cookieDomainArg := flag.String("cookieDomain", "raiyee.cn", "cookie domain")
-
-	flag.Parse()
-
-	contextPath = *contextPathArg
-	if contextPath != "" && !strings.HasPrefix(contextPath, "/") {
-		contextPath = "/" + contextPath
-	}
-
-	port = strconv.Itoa(*portArg)
-
-	encryptKey = *keyArg
-	corpId = *corpIdArg
-	corpSecret = *corpSecretArg
-	agentId = *agentIdArg
-	redirectUri = *redirectUriArg
-
-	cookieName = *cookieArg
-	cookieDomain = *cookieDomainArg
-}
 
 func main() {
 	r := mux.NewRouter()
@@ -69,36 +20,6 @@ func main() {
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
-}
-
-type Link struct {
-	LinkTo string
-	Name   string
-}
-type Links struct {
-	Links []Link
-}
-
-func serveHome(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	indexHtml := string(MustAsset("res/index.html"))
-	html := go_utils.MinifyHtml(indexHtml, true)
-	html = strings.Replace(html, "${contextPath}", contextPath, -1)
-
-	var links Links
-	if _, err := toml.DecodeFile("links.toml", &links); err != nil {
-		log.Fatal(err)
-	}
-
-	linksHtml := ""
-	for _, l := range links.Links {
-		linksHtml += "<div><a href=\"" + l.LinkTo + "\">" + l.Name + "</a></div>"
-	}
-
-	html = strings.Replace(html, "<Links/>", linksHtml, -1)
-
-	w.Write([]byte(html))
 }
 
 func handleFunc(r *mux.Router, path string, f func(http.ResponseWriter, *http.Request)) {
@@ -122,7 +43,7 @@ func (t *CookieValue) ExpiredTime() time.Time {
 func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie := CookieValue{}
-		err := go_utils.ReadCookie(r, encryptKey, cookieName, &cookie)
+		err := go_utils.ReadCookie(r, *authParam.EncryptKey, *authParam.CookieName, &cookie)
 		if err == nil && cookie.Name != "" {
 			fn(w, r) // 执行被装饰的函数
 			return
@@ -137,8 +58,8 @@ func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 		cookie.Redirect = r.FormValue("redirect")
 		cookie.CsrfToken = csrfToken
 		cookie.Expired = time.Now().Add(time.Duration(8) * time.Hour)
-		go_utils.WriteDomainCookie(w, cookieDomain, encryptKey, cookieName, &cookie)
-		url := go_utils.CreateWxQyLoginUrl(corpId, agentId, redirectUri, csrfToken)
+		go_utils.WriteDomainCookie(w, cookieDomain, *authParam.EncryptKey, *authParam.CookieName, &cookie)
+		url := go_utils.CreateWxQyLoginUrl(corpId, agentId, *authParam.RedirectUri, csrfToken)
 		log.Println("wx login url:", url)
 
 		// 301 redirect: 301 代表永久性转移(Permanently Moved)。
@@ -178,9 +99,7 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	cookie.Avatar = userInfo.Avatar
 	cookie.CsrfToken = ""
 	cookie.Expired = time.Now().Add(time.Duration(8) * time.Hour)
-
-	go_utils.WriteDomainCookie(w, cookieDomain, encryptKey, cookieName, cookie)
-
+	go_utils.WriteDomainCookie(w, cookieDomain, *authParam.EncryptKey, *authParam.CookieName, cookie)
 	if cookie.Redirect != "" {
 		http.Redirect(w, r, cookie.Redirect, 302)
 	}
