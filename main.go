@@ -55,7 +55,6 @@ func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-
 		csrfToken := go_utils.RandString(10)
 		cookie.Redirect = r.FormValue("redirect")
 		cookie.CsrfToken = csrfToken
@@ -73,7 +72,7 @@ func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue) bool {
 	code := r.FormValue("code")
 	state := r.FormValue("state")
-	if code == "" || !(state == cookie.CsrfToken || state == "qylogin") {
+	if code == "" {
 		return false
 	}
 
@@ -90,7 +89,7 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 		return false
 	}
 
-	sendLoginInfo(userInfo, accessToken)
+	sendLoginInfo(userInfo, accessToken, state)
 
 	cookie.UserId = userInfo.UserId
 	cookie.Name = userInfo.Name
@@ -105,11 +104,16 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	return true
 }
 
-func sendLoginInfo(info *go_utils.WxUserInfo, accessToken string) {
+func sendLoginInfo(info *go_utils.WxUserInfo, accessToken, state string) {
+	content := "用户[" + info.Name + "]正在电脑扫码登录。"
+	if state == "qylogin" {
+		content = "用户[" + info.Name + "]正在企业微信登录。"
+	}
+
 	msg := map[string]interface{}{
 		"touser": "@all", "toparty": "@all", "totag": "@all", "msgtype": "text", "agentid": agentId, "safe": 0,
 		"text": map[string]string{
-			"content": "用户[" + info.Name + "]正在扫码登录。",
+			"content": content,
 		},
 	}
 	_, err := go_utils.HttpPost("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token="+accessToken, msg)
