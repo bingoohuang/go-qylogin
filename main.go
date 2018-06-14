@@ -43,16 +43,18 @@ func (t *CookieValue) ExpiredTime() time.Time {
 func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie := CookieValue{}
+		if wxloginCallback(w, r, &cookie) {
+			fn(w, r) // 执行被装饰的函数
+			return
+		}
+
 		err := go_utils.ReadCookie(r, *authParam.EncryptKey, *authParam.CookieName, &cookie)
+		log.Println("cookie:", cookie)
 		if err == nil && cookie.Name != "" {
 			fn(w, r) // 执行被装饰的函数
 			return
 		}
 
-		if wxloginCallback(w, r, &cookie) {
-			fn(w, r) // 执行被装饰的函数
-			return
-		}
 
 		csrfToken := go_utils.RandString(10)
 		cookie.Redirect = r.FormValue("redirect")
@@ -69,13 +71,9 @@ func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue) bool {
-	if cookie.CsrfToken == "" {
-		return false
-	}
-
 	code := r.FormValue("code")
 	state := r.FormValue("state")
-	if code == "" || state != cookie.CsrfToken {
+	if code == "" || !(state == cookie.CsrfToken || state == "qylogin") {
 		return false
 	}
 
