@@ -43,12 +43,12 @@ func (t *CookieValue) ExpiredTime() time.Time {
 func MustAuth(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie := CookieValue{}
+		err := go_utils.ReadCookie(r, *authParam.EncryptKey, *authParam.CookieName, &cookie)
 		if wxloginCallback(w, r, &cookie) {
 			fn(w, r) // 执行被装饰的函数
 			return
 		}
 
-		err := go_utils.ReadCookie(r, *authParam.EncryptKey, *authParam.CookieName, &cookie)
 		log.Println("cookie:", cookie)
 		if err == nil && cookie.Name != "" {
 			fn(w, r) // 执行被装饰的函数
