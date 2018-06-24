@@ -89,7 +89,7 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 		return false
 	}
 
-	sendLoginInfo(userInfo, accessToken, state)
+	sendLoginInfo(userInfo, state)
 
 	cookie.UserId = userInfo.UserId
 	cookie.Name = userInfo.Name
@@ -104,20 +104,16 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	return true
 }
 
-func sendLoginInfo(info *go_utils.WxUserInfo, accessToken, state string) {
+func sendLoginInfo(info *go_utils.WxUserInfo, state string) string {
 	content := "用户[" + info.Name + "]正在电脑扫码登录。"
 	if state == "qylogin" {
 		content = "用户[" + info.Name + "]正在企业微信登录。"
 	}
 
-	msg := map[string]interface{}{
-		"touser": "@all", "toparty": "@all", "totag": "@all", "msgtype": "text", "agentid": agentId, "safe": 0,
-		"text": map[string]string{
-			"content": content,
-		},
-	}
-	_, err := go_utils.HttpPost("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token="+accessToken, msg)
+	accessToken, err := go_utils.SendWxQyMsg(corpId, corpSecret, agentId, content)
 	if err != nil {
 		log.Println("sendLoginInfo error", err)
 	}
+
+	return accessToken
 }

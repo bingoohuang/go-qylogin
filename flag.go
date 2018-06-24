@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/bingoohuang/go-utils"
 	"flag"
-	"strings"
+	"github.com/bingoohuang/go-utils"
 	"strconv"
+	"strings"
 )
 
 var (
