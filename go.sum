@@ -4,6 +4,8 @@ github.com/DATA-DOG/go-sqlmock v1.3.0 h1:ljjRxlddjfChBJdFKJs5LuCwCWPLaC1UZLwAo3P
 github.com/DATA-DOG/go-sqlmock v1.3.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/bingoohuang/go-utils v0.0.0-20181206040405-46dcb05961a7 h1:SpMoxnA2L1xIOj4c+p6w5NZiP8bejRpfWnJ/rdIanFg=
 github.com/bingoohuang/go-utils v0.0.0-20181206040405-46dcb05961a7/go.mod h1:mNSgYgB56xZssIFj9a+pHFAIMzg/pccPIeHywf8vPtc=
+github.com/bingoohuang/go-utils v0.0.0-20181206101105-3a8e40cd6af5 h1:CBwv3NSPcofIqkzop2TkXhGLYoghreKuOi+ZxTTzyKg=
+github.com/bingoohuang/go-utils v0.0.0-20181206101105-3a8e40cd6af5/go.mod h1:mNSgYgB56xZssIFj9a+pHFAIMzg/pccPIeHywf8vPtc=
 github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927/go.mod h1:h/aW8ynjgkuj+NQRlZcDbAbM1ORAbXjXX77sX7T289U=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

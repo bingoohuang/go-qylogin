@@ -101,7 +101,11 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 		return false
 	}
 
+	fmt.Println("code:", code)
+	fmt.Println("state:", state)
+
 	stateInfo := strings.Split(state, ",")
+	fmt.Println("stateInfo:", stateInfo)
 
 	agentId := appConfig.DefaultAgentId
 	randomStr := state
@@ -109,7 +113,11 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 		agentId = stateInfo[0]
 		randomStr = stateInfo[2]
 	}
+	fmt.Println("agentId:", agentId)
+
 	secret := appConfig.Agents[agentId].Secret
+	fmt.Println("secret:", secret)
+
 	accessToken, err := go_utils.GetAccessToken(appConfig.CorpId, secret)
 	if err != nil {
 		return false

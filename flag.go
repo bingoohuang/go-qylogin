@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/BurntSushi/toml"
 	"log"
 	"strconv"
@@ -51,6 +52,8 @@ func init() {
 	if _, err := toml.DecodeFile(configFile, &appConfig); err != nil {
 		log.Panic("config file decode error", err.Error())
 	}
+
+	fmt.Println("appConfig:", appConfig)
 
 	if appConfig.ContextPath != "" && !strings.HasPrefix(appConfig.ContextPath, "/") {
 		appConfig.ContextPath = "/" + appConfig.ContextPath
