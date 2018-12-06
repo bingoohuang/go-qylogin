@@ -77,7 +77,10 @@ func findCookieName(r *http.Request) string {
 	state := r.FormValue("state")
 	if state != "" {
 		log.Println("findCookieName state:", state)
-		cookieName = strings.Split(state, ",")[1]
+		parts := strings.Split(state, ",")
+		if len(parts) == 3 {
+			cookieName = parts[1]
+		}
 	}
 	if cookieName != "" {
 		return cookieName
@@ -99,7 +102,13 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	}
 
 	stateInfo := strings.Split(state, ",")
-	agentId := stateInfo[0]
+
+	agentId := appConfig.DefaultAgentId
+	randomStr := state
+	if len(stateInfo) == 3 {
+		agentId = stateInfo[0]
+		randomStr = stateInfo[2]
+	}
 	secret := appConfig.Agents[agentId].Secret
 	accessToken, err := go_utils.GetAccessToken(appConfig.CorpId, secret)
 	if err != nil {
@@ -114,14 +123,19 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 		return false
 	}
 
-	sendLoginInfo(userInfo, agentId, secret)
+	sendLoginInfo(userInfo, randomStr, agentId, secret)
 
 	cookie.UserId = userInfo.UserId
 	cookie.Name = userInfo.Name
 	cookie.Avatar = userInfo.Avatar
 	cookie.CsrfToken = ""
 	cookie.Expired = time.Now().Add(time.Duration(8) * time.Hour)
-	cookieName := stateInfo[1]
+
+	cookieName := appConfig.CookieName
+	if len(stateInfo) == 3 {
+		cookieName = stateInfo[1]
+	}
+
 	_ = go_utils.WriteDomainCookie(w, appConfig.CookieDomain, appConfig.EncryptKey, cookieName, cookie)
 	if cookie.Redirect != "" {
 		http.Redirect(w, r, cookie.Redirect, 302)
@@ -130,8 +144,11 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	return true
 }
 
-func sendLoginInfo(info *go_utils.WxUserInfo, agentId, secret string) string {
+func sendLoginInfo(info *go_utils.WxUserInfo, randomStr, agentId, secret string) string {
 	content := "用户[" + info.Name + "]正在扫码登录。"
+	if randomStr == "qylogin" {
+		content = "用户[" + info.Name + "]正在企业微信登录。"
+	}
 
 	accessToken, err := go_utils.SendWxQyMsg(appConfig.CorpId, secret, agentId, content)
 	if err != nil {
