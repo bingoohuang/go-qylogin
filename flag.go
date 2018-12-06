@@ -2,46 +2,59 @@ package main
 
 import (
 	"flag"
-	"github.com/bingoohuang/go-utils"
+	"github.com/BurntSushi/toml"
+	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
-	contextPath string
-	port        string
-
-	corpId     string
-	corpSecret string
-	agentId    string
-
-	cookieDomain string
-
-	authParam go_utils.MustAuthParam
+	port string
 )
 
+type QywxAgent struct {
+	AgentId string
+	Secret  string
+}
+
+type AppConfig struct {
+	CorpId         string
+	DefaultAgentId string
+	ContextPath    string
+	Port           int
+	CookieDomain   string
+
+	Agents map[string]QywxAgent
+
+	EncryptKey  string
+	RedirectUri string
+	CookieName  string
+}
+
+var configFile string
+var appConfig AppConfig
+
+type CookieValue struct {
+	UserId    string
+	Name      string
+	Avatar    string
+	CsrfToken string
+	Expired   time.Time
+	Redirect  string
+}
+
 func init() {
-	contextPathArg := flag.String("contextPath", "", "context path")
-	portArg := flag.Int("port", 10569, "Port to serve.")
-
-	corpIdArg := flag.String("corpId", "", "corpId")
-	corpSecretArg := flag.String("corpSecret", "", "cropId")
-	agentIdArg := flag.String("agentId", "", "agentId")
-	cookieDomainArg := flag.String("cookieDomain", "raiyee.cn", "cookie domain")
-
-	go_utils.PrepareMustAuthFlag(&authParam)
-
+	flag.StringVar(&configFile, "configFile", "appConfig.toml", "config file path")
 	flag.Parse()
 
-	contextPath = *contextPathArg
-	if contextPath != "" && !strings.HasPrefix(contextPath, "/") {
-		contextPath = "/" + contextPath
+	if _, err := toml.DecodeFile(configFile, &appConfig); err != nil {
+		log.Panic("config file decode error", err.Error())
 	}
 
-	port = strconv.Itoa(*portArg)
+	if appConfig.ContextPath != "" && !strings.HasPrefix(appConfig.ContextPath, "/") {
+		appConfig.ContextPath = "/" + appConfig.ContextPath
+	}
 
-	corpId = *corpIdArg
-	corpSecret = *corpSecretArg
-	agentId = *agentIdArg
-	cookieDomain = *cookieDomainArg
+	port = strconv.Itoa(appConfig.Port)
 }

@@ -1,0 +1,19 @@
+corpId = "wx7a2fd92"
+defaultAgentId = "1000009"
+contextPath = ""
+port = 10569
+cookieDomain = "r.cn"
+
+encryptKey = "A916EFFC"
+redirectUri = "http://i.r.cn"
+cookieName = "i-r-cn-auth"
+
+[agents]
+    [agents.1000009]
+    agentId = "1000009"
+    secret = "tALL3gURclUZV"
+
+    [agents.1000012]
+    agentId = "1000012"
+    secret = "h5VCjk1AhDQGpJ"
+

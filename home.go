@@ -11,7 +11,7 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 
 	indexHtml := string(MustAsset("res/index.html"))
 	html := go_utils.MinifyHtml(indexHtml, true)
-	html = strings.Replace(html, "${contextPath}", contextPath, -1)
+	html = strings.Replace(html, "${contextPath}", appConfig.ContextPath, -1)
 
 	linksHtml := ""
 	for _, l := range links.Links {
