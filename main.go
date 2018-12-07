@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/bingoohuang/go-utils"
 	"github.com/gorilla/mux"
@@ -95,23 +94,6 @@ func findCookieName(r *http.Request) string {
 	return appConfig.CookieName
 }
 
-func HttpGet(url string, targetObject interface{}) error {
-	log.Println("url:", url)
-	resp, err := http.Get(url)
-	log.Println("resp:", resp, ",err:", err)
-	if err != nil {
-		return err
-	}
-
-	respBody := go_utils.ReadObjectBytes(resp.Body)
-	err = json.Unmarshal(respBody, targetObject)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type QxWxAccessToken struct {
 	CorpId string `json:"corpId"`
 	Token  string `json:"token"`
@@ -139,7 +121,7 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	fmt.Println("agentId:", agentId)
 
 	var token QxWxAccessToken
-	err := HttpGet("https://test.go.easy-hi.com/varys/query-wechat-corp-token/"+agentId, &token)
+	err := go_utils.HttpGetObject("https://test.go.easy-hi.com/varys/query-wechat-corp-token/"+agentId, &token)
 	if err != nil {
 		return false
 	}
@@ -174,24 +156,13 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	return true
 }
 
-func SendWxQyMsg(accessToken, agentId, content string) (string, error) {
-	msg := map[string]interface{}{
-		"touser": "@all", "toparty": "@all", "totag": "@all", "msgtype": "text", "agentid": agentId, "safe": 0,
-		"text": map[string]string{
-			"content": content,
-		},
-	}
-	_, err := go_utils.HttpPost("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token="+accessToken, msg)
-	return accessToken, err
-}
-
 func sendLoginInfo(info *go_utils.WxUserInfo, randomStr, agentId, accessToken string) string {
 	content := "用户[" + info.Name + "]正在扫码登录。"
 	if randomStr == "qylogin" {
 		content = "用户[" + info.Name + "]正在企业微信登录。"
 	}
 
-	accessToken, err := SendWxQyMsg(accessToken, agentId, content)
+	accessToken, err := go_utils.SendWxQyMsg(accessToken, agentId, content)
 	if err != nil {
 		log.Println("sendLoginInfo error", err)
 	}
