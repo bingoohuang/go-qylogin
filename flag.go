@@ -14,19 +14,12 @@ var (
 	port string
 )
 
-type QywxAgent struct {
-	AgentId string
-	Secret  string
-}
-
 type AppConfig struct {
 	CorpId         string
 	DefaultAgentId string
 	ContextPath    string
 	Port           int
 	CookieDomain   string
-
-	Agents map[string]QywxAgent
 
 	EncryptKey  string
 	RedirectUri string

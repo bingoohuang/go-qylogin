@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bingoohuang/go-utils"
 	"github.com/gorilla/mux"
@@ -94,6 +95,28 @@ func findCookieName(r *http.Request) string {
 	return appConfig.CookieName
 }
 
+func HttpGet(url string, targetObject interface{}) error {
+	log.Println("url:", url)
+	resp, err := http.Get(url)
+	log.Println("resp:", resp, ",err:", err)
+	if err != nil {
+		return err
+	}
+
+	respBody := go_utils.ReadObjectBytes(resp.Body)
+	err = json.Unmarshal(respBody, targetObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type QxWxAccessToken struct {
+	CorpId string `json:"corpId"`
+	Token  string `json:"token"`
+}
+
 func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue) bool {
 	code := r.FormValue("code")
 	state := r.FormValue("state")
@@ -115,23 +138,22 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	}
 	fmt.Println("agentId:", agentId)
 
-	secret := appConfig.Agents[agentId].Secret
-	fmt.Println("secret:", secret)
-
-	accessToken, err := go_utils.GetAccessToken(appConfig.CorpId, secret)
-	if err != nil {
-		return false
-	}
-	userId, err := go_utils.GetLoginUserId(accessToken, code)
-	if err != nil {
-		return false
-	}
-	userInfo, err := go_utils.GetUserInfo(accessToken, userId)
+	var token QxWxAccessToken
+	err := HttpGet("https://test.go.easy-hi.com/varys/query-wechat-corp-token/"+agentId, &token)
 	if err != nil {
 		return false
 	}
 
-	sendLoginInfo(userInfo, randomStr, agentId, secret)
+	userId, err := go_utils.GetLoginUserId(token.Token, code)
+	if err != nil {
+		return false
+	}
+	userInfo, err := go_utils.GetUserInfo(token.Token, userId)
+	if err != nil {
+		return false
+	}
+
+	sendLoginInfo(userInfo, randomStr, agentId, token.Token)
 
 	cookie.UserId = userInfo.UserId
 	cookie.Name = userInfo.Name
@@ -152,13 +174,24 @@ func wxloginCallback(w http.ResponseWriter, r *http.Request, cookie *CookieValue
 	return true
 }
 
-func sendLoginInfo(info *go_utils.WxUserInfo, randomStr, agentId, secret string) string {
+func SendWxQyMsg(accessToken, agentId, content string) (string, error) {
+	msg := map[string]interface{}{
+		"touser": "@all", "toparty": "@all", "totag": "@all", "msgtype": "text", "agentid": agentId, "safe": 0,
+		"text": map[string]string{
+			"content": content,
+		},
+	}
+	_, err := go_utils.HttpPost("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token="+accessToken, msg)
+	return accessToken, err
+}
+
+func sendLoginInfo(info *go_utils.WxUserInfo, randomStr, agentId, accessToken string) string {
 	content := "用户[" + info.Name + "]正在扫码登录。"
 	if randomStr == "qylogin" {
 		content = "用户[" + info.Name + "]正在企业微信登录。"
 	}
 
-	accessToken, err := go_utils.SendWxQyMsg(appConfig.CorpId, secret, agentId, content)
+	accessToken, err := SendWxQyMsg(accessToken, agentId, content)
 	if err != nil {
 		log.Println("sendLoginInfo error", err)
 	}
